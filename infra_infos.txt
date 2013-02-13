@@ -1,0 +1,4 @@
+depend:Qt4 osm_diff_analyzer_if
+LDFLAGS:
+CFLAGS:
+
