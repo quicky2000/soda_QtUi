@@ -73,6 +73,37 @@ namespace soda_QtUi
     }
 
     //----------------------------------------------------------------------------
+    const std::map<std::string,osm_diff_analyzer_if::module_configuration> & module_list_widget::get_modules(void)
+    {
+        return m_module_configurations;
+    }
+    //----------------------------------------------------------------------------
+    void module_list_widget::clear(void)
+    {
+        clean_module_fields();
+        m_module_list_table->setRowCount(0);
+        m_module_configurations.clear();
+        m_add_module_button->setEnabled(false);
+        m_modify_module_button->setEnabled(false);
+        m_remove_module_button->setEnabled(false);
+    }
+
+    //----------------------------------------------------------------------------
+    void module_list_widget::add(const osm_diff_analyzer_if::module_configuration & p_conf)
+    {
+        std::map<std::string,osm_diff_analyzer_if::module_configuration>::iterator l_iter = m_module_configurations.insert(make_pair(p_conf.get_name(),osm_diff_analyzer_if::module_configuration(p_conf.get_name(),p_conf.get_type(),p_conf.is_enabled()))).first;
+        m_module_list_table->add_module(p_conf.get_name(),p_conf.get_type(), p_conf.is_enabled());
+        const std::map<std::string,std::string> & l_parameters = p_conf.get_parameters();
+        for(std::map<std::string,std::string>::const_iterator l_iter_param = l_parameters.begin();
+            l_iter_param != l_parameters.end();
+            ++l_iter_param)
+        {
+            l_iter->second.add_parameter(l_iter_param->first,l_iter_param->second);
+        }
+
+    }
+
+    //----------------------------------------------------------------------------
     void module_list_widget::treat_module_selected_event(int p_row)
     {
       std::cout << "configuration_widget::received module_selected_event " << p_row << std::endl ;
@@ -140,8 +171,7 @@ namespace soda_QtUi
       std::cout << "configuration_widget::received add_module_event" << std::endl ;
       assert(m_module_list_table->selectedItems().isEmpty());
       std::string l_name = m_module_name_field->text().toStdString();
-      m_module_configurations.insert(make_pair(l_name,osm_diff_analyzer_if::module_configuration(l_name,m_module_type_field->text().toStdString(), m_module_enabled_field->isChecked())));
-      m_module_list_table->add_module(l_name,m_module_type_field->text().toStdString(), m_module_enabled_field->isChecked());
+      add(osm_diff_analyzer_if::module_configuration(l_name,m_module_type_field->text().toStdString(), m_module_enabled_field->isChecked()));
       clean_module_fields();
     }
 

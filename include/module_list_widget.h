@@ -36,6 +36,9 @@ namespace soda_QtUi
     public:
         module_list_widget(QString * parent=NULL);
         osm_diff_analyzer_if::module_configuration & get_selection_configuration(void);
+        void add(const osm_diff_analyzer_if::module_configuration & p_conf);
+        void clear(void);
+        const std::map<std::string,osm_diff_analyzer_if::module_configuration> & get_modules(void);
     signals:
         void no_more_selection(void);
         void module_selected(void);

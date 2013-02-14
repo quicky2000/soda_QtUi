@@ -40,6 +40,13 @@ namespace soda_QtUi
       public:
     configuration_widget(QWidget * p_parent=NULL);
 
+    void load_configuration_file(const std::string & p_name);
+    void save_configuration_file(const std::string & p_name);
+    void clear(void);
+
+  signals:
+    void config_modified();
+
     private slots:
     // Proxy slots
     void treat_proxy_conf_box_state_changed_event();

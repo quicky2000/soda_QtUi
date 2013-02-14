@@ -35,6 +35,7 @@ namespace soda_QtUi
         module_parameter_widget(QWidget * parent = NULL);
         void display_module_parameters(const std::map<std::string,std::string> & p_parameters);
         void setEnabled(bool p_enabled);
+        void clear(void);
     signals:
         void parameter_created(const QString & p_name,const QString & p_value);
         void parameter_modified(const QString & p_name,const QString & p_value);

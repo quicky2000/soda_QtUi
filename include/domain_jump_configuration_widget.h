@@ -24,6 +24,7 @@
 #include <QPushButton>
 
 #include "domain_jump_table.h"
+#include "replication_domain_jump.h"
 
 namespace soda_QtUi
 {
@@ -33,6 +34,9 @@ namespace soda_QtUi
         Q_OBJECT
     public:
         domain_jump_configuration_widget(QWidget * parent = NULL);
+        void clear(void);
+        void add(const osm_diff_watcher::replication_domain_jump & p_domain);
+        void get_domain_jumps(std::vector<osm_diff_watcher::replication_domain_jump> & p_domain_jumps);
     signals:
     private slots:
         void treat_field_modification_event();

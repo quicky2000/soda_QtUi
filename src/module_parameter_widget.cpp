@@ -201,4 +201,14 @@ namespace soda_QtUi
     m_remove_module_parameter_button->setEnabled(l_module_parameter_deletion_enabled);
   }
 
+  //----------------------------------------------------------------------------
+  void module_parameter_widget::clear(void)
+  {
+      m_module_parameter_name_field->setText("");
+      m_module_parameter_value_field->setText("");
+      m_module_parameter_list_table->setRowCount(0);
+      m_add_module_parameter_button->setEnabled(false);
+      m_modify_module_parameter_button->setEnabled(false);
+      m_remove_module_parameter_button->setEnabled(false);
+  }
 }

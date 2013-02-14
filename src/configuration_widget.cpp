@@ -17,6 +17,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 #include "configuration_widget.h"
+#include "configuration_parser.h"
 
 #include <QVBoxLayout>
 #include <QGroupBox>
@@ -168,10 +169,156 @@ namespace soda_QtUi
     m_proxy_password_label = new QLabel(tr("proxy_authentication.proxy_password")+" :");
     l_proxy_password_layout->addWidget(m_proxy_password_label);
     m_proxy_password_field = new QLineEdit("");
+    m_proxy_password_field->setEchoMode(QLineEdit::Password);
     l_proxy_password_layout->addWidget(m_proxy_password_field);
 
     treat_start_policy_selection_event();
     treat_proxy_conf_box_state_changed_event();
+  }
+
+  //----------------------------------------------------------------
+  void configuration_widget::save_configuration_file(const std::string & p_file_name)
+  {
+      std::ofstream l_config_file;
+      l_config_file.open(p_file_name.c_str());
+      if(!l_config_file.is_open())
+      {
+          // Display Error message
+      }
+
+      // XML Header
+      l_config_file << "<?xml version='1.0' encoding='UTF-8'?>" << std::endl;
+      l_config_file << "<osm_diff_watcher_configuration>" << std::endl ;
+
+      // Start Policy
+      l_config_file << "  <variable name=\"start_policy\" value=\"" << m_start_policy_field->currentText().toStdString() << "\"/>" << std::endl ;
+      l_config_file << "  <variable name=\"iteration_number\" value=\"" << m_iteration_number_field->text().toStdString() << "\"/>" << std::endl ;
+      l_config_file << "  <variable name=\"start_sequence_number\" value=\"" << m_start_sequence_number_field->text().toStdString() << "\"/>" << std::endl ;
+      l_config_file << "  <variable name=\"replication_domain\" value=\"" << m_replication_domain_field->text().toStdString() << "\"/>" << std::endl;
+
+      // Library list
+      for(int l_iter = 0;
+          l_iter < m_library_list_table->rowCount();
+          ++l_iter)
+      {
+          l_config_file << "  <library name=\"" << m_library_list_table->item(l_iter,0)->text().toStdString() << "\"/>" << std::endl ;
+      }
+
+      // Module list
+      const std::map<std::string,osm_diff_analyzer_if::module_configuration> & l_modules = m_module_list_widget->get_modules();
+      for(std::map<std::string,osm_diff_analyzer_if::module_configuration>::const_iterator l_iter = l_modules.begin();
+          l_iter != l_modules.end();
+          ++l_iter)
+      {
+          l_config_file << "  <analyzer type=\"" << l_iter->second.get_type() << "\" name=\"" << l_iter->second.get_name() << "\">" << std::endl ;
+          const std::map<std::string,std::string> & l_parameters = l_iter->second.get_parameters();
+          for(std::map<std::string,std::string>::const_iterator l_param_iter = l_parameters.begin();
+              l_param_iter != l_parameters.end();
+              ++l_param_iter)
+            {
+              l_config_file << "    <parameter name=\"" << l_param_iter->first <<"\" value =\"" << l_param_iter->second << "\"/>" << std::endl;
+            }
+          l_config_file << "  </analyzer>" << std::endl ;
+
+      }
+      // Domain jumps
+      std::vector<osm_diff_watcher::replication_domain_jump> l_domain_jumps;
+      m_domain_jump_configuration_widget->get_domain_jumps(l_domain_jumps);
+      for(std::vector<osm_diff_watcher::replication_domain_jump>::const_iterator l_iter = l_domain_jumps.begin();
+          l_iter != l_domain_jumps.end();
+          ++l_iter)
+      {
+          l_config_file << "  <replication_domain_jump last_sequence_number=\"" << l_iter->get_old_id() << "\" ";
+          l_config_file << "old_domain=\"" << l_iter->get_old_domain() << "\" ";
+          l_config_file << "first_sequence_number=\"" << l_iter->get_new_id() << "\" ";
+          l_config_file << "new_domain=\"" << l_iter->get_new_domain() << "\" />" << std::endl;
+      }
+
+      // Proxy authentication
+      l_config_file << "  <variable name=\"proxy_authentication.proxy_name\" value=\"" << m_proxy_name_field->text().toStdString() << "\"/>" << std::endl ;
+      l_config_file << "  <variable name=\"proxy_authentication.proxy_port\" value=\"" << m_proxy_port_field->text().toStdString() << "\"/>" << std::endl ;
+      l_config_file << "  <variable name=\"proxy_authentication.proxy_login\" value=\"" << m_proxy_login_field->text().toStdString() << "\"/>" << std::endl ;
+      l_config_file << "  <variable name=\"proxy_authentication.proxy_password\" value=\"" << m_proxy_password_field->text().toStdString() << "\"/>" << std::endl ;
+
+      l_config_file << "</osm_diff_watcher_configuration>" << std::endl ;
+
+      l_config_file.close();
+  }
+
+  //----------------------------------------------------------------------------
+  void configuration_widget::load_configuration_file(const std::string & p_library)
+  {
+      this->clear();
+      const osm_diff_watcher::configuration * const l_configuration = osm_diff_watcher::configuration_parser::parse(p_library);
+
+      // Libraries
+      for(std::vector<std::string>::const_iterator l_iter = l_configuration->get_libraries().begin();
+          l_iter != l_configuration->get_libraries().end();
+          ++l_iter)
+        {
+            m_library_list_table->add_library(*l_iter);
+        }
+
+      // Proxy authentication
+      std::string l_proxy_name = l_configuration->get_variable("proxy_authentication.proxy_name");
+      std::string l_proxy_port = l_configuration->get_variable("proxy_authentication.proxy_port");
+      std::string l_proxy_login = l_configuration->get_variable("proxy_authentication.proxy_login");
+      std::string l_proxy_password = l_configuration->get_variable("proxy_authentication.proxy_password");
+
+      m_proxy_name_field->setText(l_proxy_name.c_str());
+      m_proxy_port_field->setText(l_proxy_port.c_str());
+      m_proxy_login_field->setText(l_proxy_login.c_str());
+      m_proxy_password_field->setText(l_proxy_password.c_str());
+
+      if(l_proxy_name != "" &&
+         l_proxy_port != "" &&
+         l_proxy_login != "" &&
+         l_proxy_password != "")
+        {
+          m_proxy_conf_box->setChecked(true);
+        }
+
+      // Manage replication dommain
+      std::string l_replication_domain = l_configuration->get_variable("replication_domain");
+      m_replication_domain_field->setText(l_replication_domain.c_str());
+
+      // Start Policy
+      std::string l_start_policy = l_configuration->get_variable("start_policy");
+      if(l_start_policy == "current" || l_start_policy == "")
+      {
+          m_start_policy_field->setCurrentIndex(m_start_policy_current_index);
+      }
+      else if(l_start_policy == "stored")
+      {
+          m_start_policy_field->setCurrentIndex(m_start_policy_stored_index);
+      }
+      else if(l_start_policy == "user_defined")
+      {
+          m_start_policy_field->setCurrentIndex(m_start_policy_user_defined_index);
+      }
+      treat_start_policy_selection_event();
+
+      // Start sequence number
+      m_start_sequence_number_field->setText(l_configuration->get_variable("start_sequence_number").c_str());
+      m_iteration_number_field->setText(l_configuration->get_variable("iteration_number").c_str());
+
+      // Module configuration
+      const std::vector<osm_diff_analyzer_if::module_configuration*> & l_module_configurations = l_configuration->get_module_configurations();
+      for(std::vector<osm_diff_analyzer_if::module_configuration*>::const_iterator l_iter = l_module_configurations.begin();
+          l_iter != l_module_configurations.end();
+          ++l_iter)
+      {
+          m_module_list_widget->add(**l_iter);
+      }
+      // Domain jumps
+      const std::map<uint64_t,osm_diff_watcher::replication_domain_jump> & l_domain_jumps =l_configuration->get_domain_jumps();
+      for(std::map<uint64_t,osm_diff_watcher::replication_domain_jump>::const_iterator l_iter = l_domain_jumps.begin();
+          l_iter != l_domain_jumps.end();
+          ++l_iter)
+      {
+          m_domain_jump_configuration_widget->add(l_iter->second);
+      }
+      delete l_configuration;
   }
 
   //----------------------------------------------------------------------------
@@ -186,6 +333,7 @@ namespace soda_QtUi
     m_proxy_login_field->setVisible(m_proxy_conf_box->isChecked());
     m_proxy_password_label->setVisible(m_proxy_conf_box->isChecked());
     m_proxy_password_field->setVisible(m_proxy_conf_box->isChecked());
+    emit config_modified();
   }
 
   //----------------------------------------------------------------------------
@@ -217,6 +365,27 @@ namespace soda_QtUi
 	m_replication_domain_label->setVisible(true);
 	m_replication_domain_field->setVisible(true);
       }
+    emit config_modified();
+  }
+  
+  //----------------------------------------------------------------------------
+  void configuration_widget::clear(void)
+  {
+    // Start Policy
+    m_start_policy_field->setCurrentIndex(0);
+    m_iteration_number_field->setText("");
+    m_start_sequence_number_field->setText("");
+    m_replication_domain_field->setText("");
+
+    // Library list
+    m_library_list_table->setRowCount(0);
+
+    //Modules
+    m_module_list_widget->clear();
+    m_module_parameter_widget->clear();
+
+    // Domain jumps
+    m_domain_jump_configuration_widget->clear();
   }
 
   //----------------------------------------------------------------------------
@@ -240,7 +409,9 @@ namespace soda_QtUi
 	l_module_file.open(l_file_name_std.c_str());
 	if(l_module_file.is_open())
 	  {
+	    l_module_file.close();
 	    m_library_list_table->add_library(l_file_name_std);
+            emit config_modified();
 	  }
       }
   }
@@ -253,6 +424,7 @@ namespace soda_QtUi
     if(m_selected_row >= 0 && m_selected_row < m_library_list_table->rowCount())
     {
         m_library_list_table->removeRow(m_selected_row);
+        emit config_modified();
     }
   }
 
@@ -278,6 +450,7 @@ namespace soda_QtUi
       osm_diff_analyzer_if::module_configuration & l_module_config = m_module_list_widget->get_selection_configuration();
       l_module_config.add_parameter(p_name.toStdString(),p_value.toStdString());
       m_module_parameter_widget->display_module_parameters(l_module_config.get_parameters());
+      emit config_modified();
   }
 
   //----------------------------------------------------------------------------
@@ -288,6 +461,7 @@ namespace soda_QtUi
       l_module_config.remove_parameter(p_name.toStdString());
       l_module_config.add_parameter(p_name.toStdString(),p_value.toStdString());
       m_module_parameter_widget->display_module_parameters(l_module_config.get_parameters());
+      emit config_modified();
   }
 
   //----------------------------------------------------------------------------
@@ -297,6 +471,7 @@ namespace soda_QtUi
       osm_diff_analyzer_if::module_configuration & l_module_config = m_module_list_widget->get_selection_configuration();
       l_module_config.remove_parameter(p_name.toStdString());
       m_module_parameter_widget->display_module_parameters(l_module_config.get_parameters());
+      emit config_modified();
   }
 
   //----------------------------------------------------------------------------
@@ -313,7 +488,6 @@ namespace soda_QtUi
       osm_diff_analyzer_if::module_configuration & l_module_config = m_module_list_widget->get_selection_configuration();
       m_module_parameter_widget->setEnabled(true);
       m_module_parameter_widget->display_module_parameters(l_module_config.get_parameters());
-
   }
 
   const unsigned int configuration_widget::m_start_policy_current_index = 0;

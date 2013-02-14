@@ -26,10 +26,11 @@ class QMenu;
 class QLabel;
 class QTabWidget;
 
-
 namespace soda_QtUi
 {
+  class configuration_widget;
   class soda_thread;
+
   class main_window : public QMainWindow
   {
     Q_OBJECT
@@ -51,23 +52,35 @@ namespace soda_QtUi
     void treat_launch_thread_event();
     void treat_stop_thread_event();
     void treat_open_event();
+    void treat_close_config_event();
+    void treat_save_event();
+    void treat_save_as_event();
+    void treat_config_modified_event();
     void exit();
   
 
   private:
+    void set_title(void);
     void closeEvent(QCloseEvent *event);
     void create_actions(void);
     void create_menus(void);
     void create_status_bar(void);
 
-    QAction *m_exit_action;
-    QAction *m_launch_thread_action;
-    QAction *m_stop_thread_action;
+    configuration_widget * m_configuration_widget;
+    QAction * m_exit_action;
+    QAction * m_open_action;
+    QAction * m_save_action;
+    QAction * m_save_as_action;
+    QAction * m_close_config_action;
+    QAction * m_launch_thread_action;
+    QAction * m_stop_thread_action;
     QMenu * m_file_menu;
     QLabel * m_status_label;
     QTabWidget *m_tab_widget;
 
     soda_thread * m_soda_thread;
+    std::string m_config_file_name;
+    bool m_config_modified;
   };
 }
 #endif // _MAIN_WINDOW_H_

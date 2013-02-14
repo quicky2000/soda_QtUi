@@ -23,6 +23,7 @@
 #include <QLabel>
 #include <iostream>
 #include <cassert>
+#include <sstream>
 
 namespace soda_QtUi
 {
@@ -83,6 +84,19 @@ namespace soda_QtUi
   }
 
   //----------------------------------------------------------------------------
+  void domain_jump_configuration_widget::get_domain_jumps(std::vector<osm_diff_watcher::replication_domain_jump> & p_domain_jumps)
+  {
+      for(int l_index = 0;
+          l_index < m_domain_jump_table->rowCount();
+          ++l_index)
+      {
+          uint64_t l_old_seq_number = strtoull(m_domain_jump_table->item(l_index,1)->text().toStdString().c_str(),NULL,10);
+          uint64_t l_new_seq_number = strtoull(m_domain_jump_table->item(l_index,3)->text().toStdString().c_str(),NULL,10);
+          p_domain_jumps.push_back(osm_diff_watcher::replication_domain_jump(l_old_seq_number,m_domain_jump_table->item(l_index,0)->text().toStdString(),l_new_seq_number,m_domain_jump_table->item(l_index,2)->text().toStdString()));
+      }
+  }
+
+  //----------------------------------------------------------------------------
   void domain_jump_configuration_widget::treat_field_modification_event()
   {
     std::cout << "domain_jump_configuration_widget::received field_modification_event " << std::endl ;
@@ -106,6 +120,13 @@ namespace soda_QtUi
   {
     std::cout << "domain_configuration_widget::received domain_selection_changed_event" << std::endl ;
     m_remove_button->setEnabled(!m_domain_jump_table->selectedItems().isEmpty());
+    if(!m_domain_jump_table->selectedItems().isEmpty())
+    {
+        m_start_domain->setText(m_domain_jump_table->item(m_domain_jump_table->currentRow(),0)->text());
+        m_start_seq_number->setText(m_domain_jump_table->item(m_domain_jump_table->currentRow(),1)->text());
+        m_old_domain->setText(m_domain_jump_table->item(m_domain_jump_table->currentRow(),2)->text());
+        m_old_seq_number->setText(m_domain_jump_table->item(m_domain_jump_table->currentRow(),3)->text());
+    }
   }
 
   //----------------------------------------------------------------------------
@@ -118,6 +139,19 @@ namespace soda_QtUi
 			     m_old_seq_number->text().toStdString());
     m_add_button->setEnabled(false);
     clean_fields();
+  }
+
+  //----------------------------------------------------------------------------
+  void domain_jump_configuration_widget::add(const osm_diff_watcher::replication_domain_jump & p_domain)
+  {
+      std::stringstream l_old_id_stream;
+      l_old_id_stream << p_domain.get_old_id();
+      std::stringstream l_new_id_stream;
+      l_new_id_stream << p_domain.get_new_id();
+      m_domain_jump_table->add(p_domain.get_old_domain(),
+                               l_old_id_stream.str().c_str(),
+                               p_domain.get_new_domain(),
+                               l_new_id_stream.str().c_str());
   }
 
   //----------------------------------------------------------------------------
@@ -139,5 +173,13 @@ namespace soda_QtUi
     m_old_seq_number->setText("");
   }
 
+  //----------------------------------------------------------------------------
+  void domain_jump_configuration_widget::clear(void)
+  {
+      clean_fields();
+      m_domain_jump_table->setRowCount(0);
+      m_add_button->setEnabled(false);
+      m_remove_button->setEnabled(false);
+  }
 }
 //EOF

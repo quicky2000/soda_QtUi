@@ -1,4 +1,4 @@
-depend:Qt4 osm_diff_analyzer_if
+depend:Qt4 osm_diff_watcher
 LDFLAGS:
 CFLAGS:
 
