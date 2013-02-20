@@ -25,7 +25,8 @@
 namespace soda_QtUi
 {
     //------------------------------------------------------------------------
-    module_list_widget::module_list_widget(QString *parent)
+    module_list_widget::module_list_widget(QWidget *parent):
+        QWidget(parent)
     {
         QVBoxLayout * l_layout = new QVBoxLayout(this);
 
