@@ -20,6 +20,7 @@
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QLabel>
 #include <iostream>
 #include <cassert>
@@ -33,34 +34,36 @@ namespace soda_QtUi
   {
     QVBoxLayout * l_layout = new QVBoxLayout(this);
 
-    QHBoxLayout * l_layout_field = new QHBoxLayout();
+    QGridLayout *l_layout_field = new QGridLayout();
+
+    int l_domain_field_width = 4;
     l_layout->addLayout(l_layout_field);
 
-    l_layout_field->addWidget(new QLabel(tr("Start domain")+" :"));
+    l_layout_field->addWidget(new QLabel(tr("Start domain")+" :"),0,0,1,1,Qt::AlignLeft	);
 
     m_start_domain = new QLineEdit("");
     connect(m_start_domain,SIGNAL(textEdited(const QString&)),this, SLOT(treat_field_modification_event()));
-    l_layout_field->addWidget(m_start_domain);
+    l_layout_field->addWidget(m_start_domain,0,1,1,l_domain_field_width);
 
-    l_layout_field->addWidget(new QLabel(tr("Start sequence number")+" :"));
+    l_layout_field->addWidget(new QLabel(tr("Start sequence number")+" :"),0,l_domain_field_width+1,1,1,Qt::AlignLeft);
 
     m_start_seq_number = new QLineEdit("");
     m_start_seq_number->setInputMask("000000000000");
     connect(m_start_seq_number,SIGNAL(textEdited(const QString&)),this, SLOT(treat_field_modification_event()));
-    l_layout_field->addWidget(m_start_seq_number);
+    l_layout_field->addWidget(m_start_seq_number,0,l_domain_field_width+2,1,1,Qt::AlignLeft);
 
-    l_layout_field->addWidget(new QLabel(tr("End domain")+" :"));
+    l_layout_field->addWidget(new QLabel(tr("End domain")+" :"),1,0,1,1,Qt::AlignLeft);
 
     m_old_domain = new QLineEdit("");
     connect(m_old_domain,SIGNAL(textEdited(const QString&)),this, SLOT(treat_field_modification_event()));
-    l_layout_field->addWidget(m_old_domain);
+    l_layout_field->addWidget(m_old_domain,1,1,1,l_domain_field_width);
 
-    l_layout_field->addWidget(new QLabel(tr("End sequence number")+" :"));
+    l_layout_field->addWidget(new QLabel(tr("End sequence number")+" :"),1,l_domain_field_width+1,1,1,Qt::AlignLeft);
 
     m_old_seq_number = new QLineEdit("");
     m_old_seq_number->setInputMask("000000000000");
     connect(m_old_seq_number,SIGNAL(textEdited(const QString&)),this, SLOT(treat_field_modification_event()));
-    l_layout_field->addWidget(m_old_seq_number);
+    l_layout_field->addWidget(m_old_seq_number,1,l_domain_field_width+2,1,1,Qt::AlignLeft);
 
     l_layout->addWidget(new QLabel(tr("Domain Jump list")+" :"));
 
