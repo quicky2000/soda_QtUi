@@ -22,6 +22,8 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QFileDialog>
+#include <QFormLayout>
+#include <QTabWidget>
 #include <iostream>
 #include <cassert>
 #include <fstream>
@@ -35,15 +37,14 @@ namespace soda_QtUi
   {
     QVBoxLayout * l_vertical_layout = new QVBoxLayout(this);
 
-    QGroupBox * l_start_configuration = new QGroupBox(tr("Start configuration"));
-    l_vertical_layout->addWidget(l_start_configuration);
+    QTabWidget * l_tab_widget = new QTabWidget();
+    l_vertical_layout->addWidget(l_tab_widget);
 
-    QVBoxLayout * l_start_layout = new QVBoxLayout(l_start_configuration);
+    QWidget * l_general_widget = new QWidget();
+    l_tab_widget->addTab(l_general_widget,tr("General"));
 
-    QHBoxLayout *l_start_horizontal_layout = new QHBoxLayout();
-    l_start_layout->addLayout(l_start_horizontal_layout);
+    QFormLayout * l_general_layout = new QFormLayout(l_general_widget);
 
-    l_start_horizontal_layout->addWidget(new QLabel(tr("start_policy")+" :"));
     m_start_policy_field = new QComboBox();
     m_start_policy_field->addItem(tr("current"));
     m_start_policy_field->addItem(tr("stored"));
@@ -52,30 +53,30 @@ namespace soda_QtUi
     m_start_policies.push_back("current");
     m_start_policies.push_back("stored");
     m_start_policies.push_back("user_defined");
-    m_start_policy_field->setSizeAdjustPolicy(QComboBox::AdjustToContents);
     connect(m_start_policy_field,SIGNAL(activated (int)),this, SLOT(treat_start_policy_selection_event()));
-    l_start_horizontal_layout->addWidget(m_start_policy_field);
 
-    l_start_horizontal_layout->addWidget(new QLabel(tr("iteration_number")+" :"));
+    l_general_layout->addRow(tr("Start policy")+" :",m_start_policy_field);
+
     m_iteration_number_field = new QLineEdit("");
     m_iteration_number_field->setInputMask("000000000000");
-    l_start_horizontal_layout->addWidget(m_iteration_number_field);
+    l_general_layout->addRow(tr("Iteration number")+" :",m_iteration_number_field);
 
-    m_start_sequence_number_label = new QLabel(tr("start_sequence_number")+" :");
-    l_start_horizontal_layout->addWidget(m_start_sequence_number_label);
     m_start_sequence_number_field = new QLineEdit("");
     m_start_sequence_number_field->setInputMask("000000000000");
-    l_start_horizontal_layout->addWidget(m_start_sequence_number_field);
+    l_general_layout->addRow(tr("Start sequence number")+" :",m_start_sequence_number_field);
 
     m_replication_domain_label = new QLabel(tr("replication_domain")+" :");
-    l_start_layout->addWidget(m_replication_domain_label);
     m_replication_domain_field = new QLineEdit("");
-    l_start_layout->addWidget(m_replication_domain_field);
+    l_general_layout->addRow(tr("Replication domain")+" :",m_replication_domain_field);
 
 
     // Module library configuration
+    QWidget * l_module_library_widget = new QWidget();
+    l_tab_widget->addTab(l_module_library_widget,tr("Module libraries"));
+    QVBoxLayout * l_module_library_layout = new QVBoxLayout(l_module_library_widget);
+
     QGroupBox * l_module_libraries_configuration = new QGroupBox(tr("Module Libraries"));
-    l_vertical_layout->addWidget(l_module_libraries_configuration);
+    l_module_library_layout->addWidget(l_module_libraries_configuration);
 
     QVBoxLayout * l_module_libraries_layout = new QVBoxLayout(l_module_libraries_configuration);
 
@@ -97,10 +98,10 @@ namespace soda_QtUi
     m_remove_library_button->setEnabled(false);
 
     // Modules configuration
-    QGroupBox * l_module_configuration = new QGroupBox(tr("Module configuration"));
-    l_vertical_layout->addWidget(l_module_configuration);
+    QWidget * l_module_configuration_widget = new QWidget();
+    l_tab_widget->addTab(l_module_configuration_widget,tr("Modules"));
 
-    QHBoxLayout * l_module_configuration_layout = new QHBoxLayout(l_module_configuration);
+    QHBoxLayout * l_module_configuration_layout = new QHBoxLayout(l_module_configuration_widget);
 
     m_module_list_widget = new module_list_widget();
     connect(m_module_list_widget,SIGNAL(no_more_selection()),this,SLOT(treat_no_more_module_selection_event()));
@@ -116,61 +117,40 @@ namespace soda_QtUi
     l_module_configuration_layout->addWidget(m_module_parameter_widget);
 
     // Domain jump configuration
-    QGroupBox * l_domain_jump_configuration = new QGroupBox(tr("Domain Jump configuration"));
-    l_vertical_layout->addWidget(l_domain_jump_configuration);
+    QWidget * l_domain_jump_configuration_widget = new QWidget();
+    l_tab_widget->addTab(l_domain_jump_configuration_widget,tr("Domain jumps"));
 
-    QVBoxLayout * l_domain_jump_layout = new QVBoxLayout(l_domain_jump_configuration);
+    QVBoxLayout * l_domain_jump_layout = new QVBoxLayout(l_domain_jump_configuration_widget);
 
     m_domain_jump_configuration_widget = new domain_jump_configuration_widget();
     l_domain_jump_layout->addWidget(m_domain_jump_configuration_widget);
 
     // Proxy configuration
-    QGroupBox * l_proxy_configuration = new QGroupBox(tr("Proxy configuration"));
-    l_vertical_layout->addWidget(l_proxy_configuration);
+    QWidget * l_proxy_configuration_widget = new QWidget();
+    l_tab_widget->addTab(l_proxy_configuration_widget,tr("Network"));
 
-    QVBoxLayout * l_proxy_layout = new QVBoxLayout(l_proxy_configuration);
+    QVBoxLayout * l_proxy_layout = new QVBoxLayout(l_proxy_configuration_widget);
 
     m_proxy_conf_box = new QCheckBox(tr("Behind a proxy"));
     connect(m_proxy_conf_box,SIGNAL(stateChanged(int)),this, SLOT(treat_proxy_conf_box_state_changed_event()));
     l_proxy_layout->addWidget(m_proxy_conf_box);
 
-    QHBoxLayout * l_proxy_table_layout = new QHBoxLayout();
-    l_proxy_layout->addLayout(l_proxy_table_layout);
-    QVBoxLayout * l_proxy_left_field_layout = new QVBoxLayout();
-    l_proxy_table_layout->addLayout(l_proxy_left_field_layout);
-    QVBoxLayout * l_proxy_right_field_layout = new QVBoxLayout();
-    l_proxy_table_layout->addLayout(l_proxy_right_field_layout);
+    QFormLayout *l_form_layout = new QFormLayout();
+    l_proxy_layout->addLayout(l_form_layout);
 
-    QHBoxLayout * l_proxy_name_layout = new QHBoxLayout();
-    l_proxy_left_field_layout->addLayout(l_proxy_name_layout);
-    m_proxy_name_label = new QLabel(tr("proxy_authentication.proxy_name")+" :");
-    l_proxy_name_layout->addWidget(m_proxy_name_label);
     m_proxy_name_field = new QLineEdit("");
-    l_proxy_name_layout->addWidget(m_proxy_name_field);
+    l_form_layout->addRow(tr("Proxy name")+" :",m_proxy_name_field);
 
-    QHBoxLayout * l_proxy_port_layout = new QHBoxLayout();
-    l_proxy_right_field_layout->addLayout(l_proxy_port_layout);
-    m_proxy_port_label = new QLabel(tr("proxy_authentication.proxy_port")+" :");
-    l_proxy_port_layout->addWidget(m_proxy_port_label);
     m_proxy_port_field = new QLineEdit("");
     m_proxy_port_field->setInputMask("00000");
-    l_proxy_port_layout->addWidget(m_proxy_port_field);
+    l_form_layout->addRow(tr("Proxy port")+" :",m_proxy_port_field);
 
-
-    QHBoxLayout * l_proxy_login_layout = new QHBoxLayout();
-    l_proxy_left_field_layout->addLayout(l_proxy_login_layout);
-    m_proxy_login_label = new QLabel(tr("proxy_authentication.proxy_login")+" :");
-    l_proxy_login_layout->addWidget(m_proxy_login_label);
     m_proxy_login_field = new QLineEdit("");
-    l_proxy_login_layout->addWidget(m_proxy_login_field);
+    l_form_layout->addRow(tr("Proxy login")+" :",m_proxy_login_field);
 
-    QHBoxLayout * l_proxy_password_layout = new QHBoxLayout();
-    l_proxy_right_field_layout->addLayout(l_proxy_password_layout);
-    m_proxy_password_label = new QLabel(tr("proxy_authentication.proxy_password")+" :");
-    l_proxy_password_layout->addWidget(m_proxy_password_label);
     m_proxy_password_field = new QLineEdit("");
     m_proxy_password_field->setEchoMode(QLineEdit::Password);
-    l_proxy_password_layout->addWidget(m_proxy_password_field);
+    l_form_layout->addRow(tr("Proxy password")+" :",m_proxy_password_field);
 
     treat_start_policy_selection_event();
     treat_proxy_conf_box_state_changed_event();
@@ -325,14 +305,10 @@ namespace soda_QtUi
   void configuration_widget::treat_proxy_conf_box_state_changed_event()
   {
     std::cout << "configuration_widget::received proxy_conf_box_state_changed Event" << std::endl ;
-    m_proxy_name_label->setVisible(m_proxy_conf_box->isChecked());
-    m_proxy_name_field->setVisible(m_proxy_conf_box->isChecked());
-    m_proxy_port_label->setVisible(m_proxy_conf_box->isChecked());
-    m_proxy_port_field->setVisible(m_proxy_conf_box->isChecked());
-    m_proxy_login_label->setVisible(m_proxy_conf_box->isChecked());
-    m_proxy_login_field->setVisible(m_proxy_conf_box->isChecked());
-    m_proxy_password_label->setVisible(m_proxy_conf_box->isChecked());
-    m_proxy_password_field->setVisible(m_proxy_conf_box->isChecked());
+    m_proxy_name_field->setEnabled(m_proxy_conf_box->isChecked());
+    m_proxy_port_field->setEnabled(m_proxy_conf_box->isChecked());
+    m_proxy_login_field->setEnabled(m_proxy_conf_box->isChecked());
+    m_proxy_password_field->setEnabled(m_proxy_conf_box->isChecked());
     emit config_modified();
   }
 
@@ -346,24 +322,18 @@ namespace soda_QtUi
     
     if((unsigned int)m_start_policy_field->currentIndex() == m_start_policy_stored_index)
       {
-	m_start_sequence_number_label->setVisible(false);
-	m_start_sequence_number_field->setVisible(false);
-	m_replication_domain_label->setVisible(false);
-	m_replication_domain_field->setVisible(false);
+        m_start_sequence_number_field->setEnabled(false);
+        m_replication_domain_field->setEnabled(false);
       }
     else if((unsigned int)m_start_policy_field->currentIndex() == m_start_policy_current_index)
       {
-	m_start_sequence_number_label->setVisible(false);
-	m_start_sequence_number_field->setVisible(false);
-	m_replication_domain_label->setVisible(true);
-	m_replication_domain_field->setVisible(true);
+        m_start_sequence_number_field->setEnabled(false);
+        m_replication_domain_field->setEnabled(true);
       }
     else
       {
-	m_start_sequence_number_label->setVisible(true);
-	m_start_sequence_number_field->setVisible(true);
-	m_replication_domain_label->setVisible(true);
-	m_replication_domain_field->setVisible(true);
+        m_start_sequence_number_field->setEnabled(true);
+        m_replication_domain_field->setEnabled(true);
       }
     emit config_modified();
   }
