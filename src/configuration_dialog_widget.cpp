@@ -23,11 +23,11 @@
 namespace soda_QtUi
 {
   //----------------------------------------------------------------------------
-  configuration_dialog_widget::configuration_dialog_widget(QWidget * parent):
+  configuration_dialog_widget::configuration_dialog_widget(configuration_widget * p_conf_widget,QWidget * parent):
     QDialog(parent)
   {
     QVBoxLayout * l_layout = new QVBoxLayout(this);
-    l_layout->addWidget(new configuration_widget());
+    l_layout->addWidget(p_conf_widget);
   }
 
 }

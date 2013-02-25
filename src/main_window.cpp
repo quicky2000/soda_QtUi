@@ -32,7 +32,6 @@
 #include <cassert>
 #include "soda_thread.h"
 #include "configuration_widget.h"
-#include "run_control_widget.h"
 #include <fstream>
 
 using namespace std;
@@ -43,36 +42,57 @@ namespace soda_QtUi
   //------------------------------------------------------------------------------
   main_window::main_window(void):
     m_exit_action(NULL),
-    m_launch_thread_action(NULL),
-    m_stop_thread_action(NULL),
     m_file_menu(NULL),
     m_status_label(NULL),
     m_tab_widget(NULL),
-    m_soda_thread(NULL),
     m_config_file_name(""),
-    m_config_modified(false)
+    m_config_modified(false),
+    m_url_reader(quicky_url_reader::url_reader::instance())
   {
     set_title();
     create_actions();
     create_menus();
     create_status_bar();
 
-    m_tab_widget = new QTabWidget();
-    connect(m_tab_widget,SIGNAL(currentChanged(int)),this, SLOT(treat_tab_changed_event(int)));
 
-    QScrollArea * l_scroll_area = new QScrollArea();
     m_configuration_widget = new configuration_widget();
     connect(m_configuration_widget,SIGNAL(config_modified()),this,SLOT(treat_config_modified_event()));
-    l_scroll_area->setWidget(m_configuration_widget);
 
-    m_tab_widget->addTab(l_scroll_area,tr("Configuration"));
-    //   m_tab_widget->addTab(new run_control_widget(),tr("Run"));
-    setCentralWidget(m_tab_widget);
+    m_configuration_dialog = new configuration_dialog_widget(m_configuration_widget,this);
+    connect(m_configuration_dialog,SIGNAL(finished(int)),this,SLOT(treat_dialog_closed_event()));
+    m_run_control_widget = new run_control_widget();
+    connect(m_run_control_widget,SIGNAL(config_button_pressed()),m_configuration_dialog,SLOT(exec()));
 
+    setCentralWidget(m_run_control_widget);
+
+    ifstream l_tmp_config_file;
+    l_tmp_config_file.open("tmp.conf");
+    if(l_tmp_config_file.is_open())
+    {
+        m_configuration_widget->load_configuration_file("tmp.conf");
+        m_run_control_widget->append_common_text("Load previously used configuration");
+	m_run_control_widget->manage_start_button(true);
+        l_tmp_config_file.close();
+        m_config_modified = false;
+        set_title();
+    }
+    else
+      {
+        m_run_control_widget->append_common_text("Configure to be able to start");
+	m_run_control_widget->manage_start_button(false);
+      }
     setMinimumSize(160, 160);
     resize(1024, 768);
   }
 
+  //----------------------------------------------------------------
+  void main_window::treat_dialog_closed_event()
+    {
+      cout << "QtEvent::Dialog closed" << endl ;
+      m_configuration_widget->save_configuration_file("tmp.conf");
+      m_run_control_widget->append_common_text("Configuration done.");
+      m_run_control_widget->manage_start_button(true);
+    }
   //----------------------------------------------------------------
   void main_window::set_title(void)
   {
@@ -96,16 +116,6 @@ namespace soda_QtUi
   }
 
   //------------------------------------------------------------------------------
-  void main_window::end_of_thread()
-  {
-    display_status_message("Thread terminated");
-    m_stop_thread_action->setEnabled(false);
-    //  delete m_soda_thread;
-    m_soda_thread = NULL;
-    m_launch_thread_action->setEnabled(true);
-  }
-
-  //------------------------------------------------------------------------------
   bool main_window::ask_yes_no_qestion(const std::string & p_title, const std::string & p_question)
   {
     int l_result = QMessageBox::question(this,
@@ -116,28 +126,11 @@ namespace soda_QtUi
     return l_result == QMessageBox::Yes;
   }
 
-
-  //------------------------------------------------------------------------------
-  void main_window::treat_tab_changed_event(int index)
-  {
-    std::cout << "QtEvent::tab changed" << std::endl ;
-    assert(m_tab_widget);
-  }
-
   //------------------------------------------------------------------------------
   void main_window::exit(void)
   {
     cout << "QtEvent::Exit" << endl ;
     close();
-  }
-
-  //------------------------------------------------------------------------------
-  void main_window::treat_stop_thread_event(void)
-  {
-    cout << "QtEvent::Stop_Thread" << endl ;
-    m_launch_thread_action->setEnabled(true);
-    m_soda_thread->stop_work();
-    m_stop_thread_action->setEnabled(false);
   }
 
   //------------------------------------------------------------------------------
@@ -169,6 +162,10 @@ namespace soda_QtUi
             m_open_action->setEnabled(false);
             m_save_action->setEnabled(false);
             m_save_as_action->setEnabled(true);
+            m_configuration_widget->save_configuration_file("tmp.conf");
+            m_run_control_widget->append_common_text("Configuration loaded");
+	    m_run_control_widget->manage_start_button(true);
+
           }
       }
 
@@ -234,33 +231,6 @@ namespace soda_QtUi
   }
 
   //------------------------------------------------------------------------------
-  void main_window::treat_launch_thread_event(void)
-  {
-    cout << "QtEvent::Launch_Thread" << endl ;
-    m_launch_thread_action->setEnabled(false);
-
-    m_soda_thread = new soda_thread();
-    connect(m_soda_thread,SIGNAL(display_status_message(const QString & )),this,SLOT(display_status_message(const QString &)));
-    QThread *soda_threadThread = new QThread(this);
-
-    connect(soda_threadThread, SIGNAL(started()), m_soda_thread, SLOT(doWork()));
-    connect(m_soda_thread,SIGNAL(end_of_execution()),soda_threadThread,SLOT(quit()));
-
-    connect(soda_threadThread, SIGNAL(finished()), this, SLOT(end_of_thread()));
-    connect(soda_threadThread, SIGNAL(finished()), m_soda_thread, SLOT(deleteLater()));
-    connect(soda_threadThread, SIGNAL(finished()), soda_threadThread, SLOT(deleteLater()));
-
-    //  connect(m_soda_thread, SIGNAL(end_of_execution()), this, SLOT(end_of_thread()));
-    m_soda_thread->moveToThread(soda_threadThread);
-
-    // Starts an event loop, and emits soda_threadThread->started()
-    soda_threadThread->start();
-
-    m_stop_thread_action->setEnabled(true);
-    std::cout << "End of Launch Thread event" << std::endl ;
-  }
-
-  //------------------------------------------------------------------------------
   void main_window::closeEvent(QCloseEvent *event)
   {
     string l_question("Are you sure want to quit ?");
@@ -268,10 +238,6 @@ namespace soda_QtUi
     {
         l_question += "\nYou have pending modifications !\n";
     }
-    if(m_soda_thread)
-      {
-	l_question += "\nSome thread are still running !\n";
-      }
     int l_result = QMessageBox::question(this, tr("Quit"),
 					 tr(l_question.c_str()),
 					 QMessageBox::Yes | QMessageBox::Default,
@@ -289,37 +255,27 @@ namespace soda_QtUi
   //------------------------------------------------------------------------------
   void main_window::create_actions(void)
   {
-    m_launch_thread_action = new QAction(tr("&Launch Thread"),this);
-    m_launch_thread_action->setShortcut(tr("Ctrl+L"));
-    m_launch_thread_action->setStatusTip(tr("Launch Thread")); 
-    connect(m_launch_thread_action,SIGNAL(triggered()),this,SLOT(treat_launch_thread_event()));
-
-    m_open_action = new QAction(tr("&Open"),this);
+    m_open_action = new QAction(tr("&Load configuration"),this);
     m_open_action->setShortcut(tr("Ctrl+O"));
-    m_open_action->setStatusTip(tr("Open configuration file"));
+    m_open_action->setStatusTip(tr("Load configuration file"));
     connect(m_open_action,SIGNAL(triggered()),this,SLOT(treat_open_event()));
 
-    m_save_action = new QAction(tr("&Save"),this);
+    m_save_action = new QAction(tr("&Save configuration"),this);
     m_save_action->setShortcut(tr("Ctrl+S"));
     m_save_action->setStatusTip(tr("Save current configuration file"));
     m_save_action->setEnabled(false);
     connect(m_save_action,SIGNAL(triggered()),this,SLOT(treat_save_event()));
 
-    m_save_as_action = new QAction(tr("Save As"),this);
+    m_save_as_action = new QAction(tr("Save configuration as"),this);
     m_save_as_action->setShortcut(tr("Ctrl+W"));
     m_save_as_action->setStatusTip(tr("Save configuration file"));
     connect(m_save_as_action,SIGNAL(triggered()),this,SLOT(treat_save_as_event()));
 
-    m_close_config_action = new QAction(tr("&Close"),this);
+    m_close_config_action = new QAction(tr("&Close configuration"),this);
     m_close_config_action->setShortcut(tr("Ctrl+C"));
     m_close_config_action->setStatusTip(tr("Close configuration file"));
     m_close_config_action->setEnabled(false);
     connect(m_close_config_action,SIGNAL(triggered()),this,SLOT(treat_close_config_event()));
-
-    m_stop_thread_action = new QAction(tr("&Stop Thread"),this);
-    m_stop_thread_action->setShortcut(tr("Ctrl+L"));
-    m_stop_thread_action->setStatusTip(tr("Stop Thread")); 
-    connect(m_stop_thread_action,SIGNAL(triggered()),this,SLOT(treat_stop_thread_event()));
 
     m_exit_action = new QAction(tr("&Quit"),this);
     m_exit_action->setShortcut(tr("Ctrl+Q"));
@@ -331,8 +287,6 @@ namespace soda_QtUi
   void main_window::create_menus(void)
   {
     m_file_menu = menuBar()->addMenu(tr("&File"));
-    m_file_menu->addAction(m_launch_thread_action);
-    m_file_menu->addAction(m_stop_thread_action);
     m_file_menu->addAction(m_open_action);
     m_file_menu->addAction(m_save_action);
     m_file_menu->addAction(m_save_as_action);
@@ -341,8 +295,6 @@ namespace soda_QtUi
 
     // Manage action activation
     m_exit_action->setEnabled(true);
-    m_launch_thread_action->setEnabled(true);
-    m_stop_thread_action->setEnabled(false);
   }
 
   //------------------------------------------------------------------------------

@@ -20,6 +20,7 @@
 #define CONFIGURATION_DIALOG_WIDGET_H
 
 #include <QDialog>
+#include "configuration_widget.h"
 
 namespace soda_QtUi
 {
@@ -27,7 +28,7 @@ namespace soda_QtUi
   {
     Q_OBJECT
       public:
-    configuration_dialog_widget(QWidget * parent = NULL);
+    configuration_dialog_widget(configuration_widget * p_conf_widget,QWidget * parent = NULL);
   signals:
     private slots:
   private:

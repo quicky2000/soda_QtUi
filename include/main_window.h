@@ -20,6 +20,9 @@
 #define _MAIN_WINDOW_H_
 
 #include <QMainWindow>
+#include "configuration_dialog_widget.h"
+#include "url_reader.h"
+#include "run_control_widget.h"
 
 class QAction;
 class QMenu;
@@ -46,19 +49,14 @@ namespace soda_QtUi
 
     private slots:
     void display_status_message(const QString & p_text);
-    void end_of_thread();
-    //
-    void treat_tab_changed_event(int index);
-    void treat_launch_thread_event();
-    void treat_stop_thread_event();
     void treat_open_event();
     void treat_close_config_event();
     void treat_save_event();
     void treat_save_as_event();
     void treat_config_modified_event();
+    void treat_dialog_closed_event();
     void exit();
   
-
   private:
     void set_title(void);
     void closeEvent(QCloseEvent *event);
@@ -67,20 +65,19 @@ namespace soda_QtUi
     void create_status_bar(void);
 
     configuration_widget * m_configuration_widget;
+    configuration_dialog_widget * m_configuration_dialog;
     QAction * m_exit_action;
     QAction * m_open_action;
     QAction * m_save_action;
     QAction * m_save_as_action;
     QAction * m_close_config_action;
-    QAction * m_launch_thread_action;
-    QAction * m_stop_thread_action;
     QMenu * m_file_menu;
     QLabel * m_status_label;
     QTabWidget *m_tab_widget;
-
-    soda_thread * m_soda_thread;
+    run_control_widget * m_run_control_widget;
     std::string m_config_file_name;
     bool m_config_modified;
+    quicky_url_reader::url_reader & m_url_reader;
   };
 }
 #endif // _MAIN_WINDOW_H_
