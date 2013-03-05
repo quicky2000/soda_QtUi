@@ -46,8 +46,9 @@ namespace soda_QtUi
   public slots:
     void append_common_text(const QString & p_text);
 
-    private slots:
+    public slots:
     void display_error_message(const QString & p_title, const QString & p_text);
+    private slots:
     void treat_config_event();
     void treat_start_event();
     void treat_stop_event();

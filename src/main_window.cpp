@@ -68,14 +68,41 @@ namespace soda_QtUi
     ifstream l_tmp_config_file;
     l_tmp_config_file.open("tmp.conf");
     if(l_tmp_config_file.is_open())
-    {
-        m_configuration_widget->load_configuration_file("tmp.conf");
-        m_run_control_widget->append_common_text("Load previously used configuration");
-	m_run_control_widget->manage_start_button(true);
-        l_tmp_config_file.close();
-        m_config_modified = false;
-        set_title();
-    }
+      {
+	try
+	  {
+	    m_configuration_widget->load_configuration_file("tmp.conf");
+	    m_run_control_widget->append_common_text("Load previously used configuration");
+	    m_run_control_widget->manage_start_button(true);
+	    l_tmp_config_file.close();
+	    m_config_modified = false;
+	    set_title();
+	  }
+	catch(quicky_exception::quicky_runtime_exception & e)
+	  {
+	    std::stringstream l_stream;
+#ifdef SODA_QTUI_DEBUG
+	    l_stream << " from line " << e.get_line() << " in file " << e.get_file();
+#endif
+	    m_run_control_widget->display_error_message("Runtime exception",QString(e.what())+QString(l_stream.str().c_str()));
+	  }
+	catch(quicky_exception::quicky_logic_exception & e)
+	  {
+	    std::stringstream l_stream;
+#ifdef SODA_QTUI_DEBUG
+	    l_stream << " from line " << e.get_line() << " in file " << e.get_file();
+#endif
+	     m_run_control_widget->display_error_message("Logic exception",QString(e.what())+QString(l_stream.str().c_str()));
+	  }
+	catch(std::logic_error & e)
+	  {
+	     m_run_control_widget->display_error_message("Logic error",e.what());
+	  }
+	catch(std::runtime_error & e)
+	  {
+	     m_run_control_widget->display_error_message("Runtime error",e.what());
+	  }
+      }
     else
       {
         m_run_control_widget->append_common_text("Configure to be able to start");
@@ -87,21 +114,21 @@ namespace soda_QtUi
 
   //----------------------------------------------------------------
   void main_window::treat_dialog_closed_event()
-    {
-      cout << "QtEvent::Dialog closed" << endl ;
-      m_configuration_widget->save_configuration_file("tmp.conf");
-      m_run_control_widget->append_common_text("Configuration done.");
-      m_run_control_widget->manage_start_button(true);
-    }
+  {
+    cout << "QtEvent::Dialog closed" << endl ;
+    m_configuration_widget->save_configuration_file("tmp.conf");
+    m_run_control_widget->append_common_text("Configuration done.");
+    m_run_control_widget->manage_start_button(true);
+  }
   //----------------------------------------------------------------
   void main_window::set_title(void)
   {
-      std::string l_title = (m_config_file_name == "" ? "SODA" : m_config_file_name);
-      if(m_config_modified)
+    std::string l_title = (m_config_file_name == "" ? "SODA" : m_config_file_name);
+    if(m_config_modified)
       {
-          l_title += "*";
+	l_title += "*";
       }
-      setWindowTitle(l_title.c_str());
+    setWindowTitle(l_title.c_str());
   }
 
   //---------------------------------------------------
@@ -154,17 +181,44 @@ namespace soda_QtUi
 	l_module_file.open(l_file_name_std.c_str());
 	if(l_module_file.is_open())
 	  {
-            m_config_file_name = l_file_name_std;
-            m_configuration_widget->load_configuration_file(l_file_name_std);
-            m_config_modified = false;
-            set_title();
-            m_close_config_action->setEnabled(true);
-            m_open_action->setEnabled(false);
-            m_save_action->setEnabled(false);
-            m_save_as_action->setEnabled(true);
-            m_configuration_widget->save_configuration_file("tmp.conf");
-            m_run_control_widget->append_common_text("Configuration loaded");
-	    m_run_control_widget->manage_start_button(true);
+	    try
+	      {
+		m_config_file_name = l_file_name_std;
+		m_configuration_widget->load_configuration_file(l_file_name_std);
+		m_config_modified = false;
+		set_title();
+		m_close_config_action->setEnabled(true);
+		m_open_action->setEnabled(false);
+		m_save_action->setEnabled(false);
+		m_save_as_action->setEnabled(true);
+		m_configuration_widget->save_configuration_file("tmp.conf");
+		m_run_control_widget->append_common_text("Configuration loaded");
+		m_run_control_widget->manage_start_button(true);
+	      }
+	    catch(quicky_exception::quicky_runtime_exception & e)
+	      {
+		std::stringstream l_stream;
+#ifdef SODA_QTUI_DEBUG
+		l_stream << " from line " << e.get_line() << " in file " << e.get_file();
+#endif
+		m_run_control_widget->display_error_message("Runtime exception",QString(e.what())+QString(l_stream.str().c_str()));
+	      }
+	    catch(quicky_exception::quicky_logic_exception & e)
+	      {
+		std::stringstream l_stream;
+#ifdef SODA_QTUI_DEBUG
+		l_stream << " from line " << e.get_line() << " in file " << e.get_file();
+#endif
+		m_run_control_widget->display_error_message("Logic exception",QString(e.what())+QString(l_stream.str().c_str()));
+	      }
+	    catch(std::logic_error & e)
+	      {
+		m_run_control_widget->display_error_message("Logic error",e.what());
+	      }
+	    catch(std::runtime_error & e)
+	      {
+		m_run_control_widget->display_error_message("Runtime error",e.what());
+	      }
 
           }
       }
@@ -174,12 +228,12 @@ namespace soda_QtUi
   //------------------------------------------------------------------------------
   void main_window::treat_close_config_event()
   {
-      bool l_close = true;
-      if(m_config_modified)
+    bool l_close = true;
+    if(m_config_modified)
       {
-          l_close = ask_yes_no_qestion(tr("Close configuration").toStdString(),tr("You have pending modifications, do you really want to close the configuration ?").toStdString());
+	l_close = ask_yes_no_qestion(tr("Close configuration").toStdString(),tr("You have pending modifications, do you really want to close the configuration ?").toStdString());
       }
-      if(l_close)
+    if(l_close)
       {
         m_configuration_widget->clear();
         m_config_file_name = "";
@@ -194,31 +248,31 @@ namespace soda_QtUi
   //------------------------------------------------------------------------------
   void main_window::treat_save_event()
   {
-      cout << "QtEvent::Save" << endl ;
-      assert(m_config_file_name != "");
-      m_configuration_widget->save_configuration_file(m_config_file_name);
-      m_save_action->setEnabled(false);
-      m_config_modified = false;
-      set_title();
+    cout << "QtEvent::Save" << endl ;
+    assert(m_config_file_name != "");
+    m_configuration_widget->save_configuration_file(m_config_file_name);
+    m_save_action->setEnabled(false);
+    m_config_modified = false;
+    set_title();
   }
 
   //------------------------------------------------------------------------------
   void main_window::treat_save_as_event()
   {
-      cout << "QtEvent::Save as" << endl ;
-      std::string l_file_name = QFileDialog::getSaveFileName(this,tr("Save configuration file")).toStdString();
-      if(l_file_name != "")
+    cout << "QtEvent::Save as" << endl ;
+    std::string l_file_name = QFileDialog::getSaveFileName(this,tr("Save configuration file")).toStdString();
+    if(l_file_name != "")
       {
 #ifndef _WIN32
-          std::ifstream l_check_file;
-          l_check_file.open(l_file_name.c_str());
-          bool l_write = true;
-          if(l_check_file.is_open())
+	std::ifstream l_check_file;
+	l_check_file.open(l_file_name.c_str());
+	bool l_write = true;
+	if(l_check_file.is_open())
           {
-              l_check_file.close();
-             l_write = ask_yes_no_qestion(tr("Overwrite file ?").toStdString(),tr("The file already exists. Overwrite ?").toStdString());
+	    l_check_file.close();
+	    l_write = ask_yes_no_qestion(tr("Overwrite file ?").toStdString(),tr("The file already exists. Overwrite ?").toStdString());
           }
-          if(l_write)
+	if(l_write)
           {
 #endif
             m_config_file_name = l_file_name;
@@ -235,9 +289,9 @@ namespace soda_QtUi
   {
     string l_question("Are you sure want to quit ?");
     if(m_config_modified)
-    {
+      {
         l_question += "\nYou have pending modifications !\n";
-    }
+      }
     int l_result = QMessageBox::question(this, tr("Quit"),
 					 tr(l_question.c_str()),
 					 QMessageBox::Yes | QMessageBox::Default,
@@ -307,9 +361,9 @@ namespace soda_QtUi
   //------------------------------------------------------------------------------
   void main_window::treat_config_modified_event()
   {
-      m_save_action->setEnabled(m_config_file_name != "");
-      m_config_modified = true;
-      set_title();
+    m_save_action->setEnabled(m_config_file_name != "");
+    m_config_modified = true;
+    set_title();
   }
 
 }
