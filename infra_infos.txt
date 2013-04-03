@@ -1,4 +1,4 @@
-depend:Qt4 EXT_Qt4_QtWebKit soda_core
+depend:EXT_Qt4 EXT_Qt4_QtWebKit soda_core
 LDFLAGS:
 CFLAGS:-g -Wall -ansi -pedantic
 
